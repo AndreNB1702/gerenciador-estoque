@@ -60,7 +60,43 @@
     </main>
 
     <script>
-        function adicionarTarefa() { alert("Integração vindo aí!"); }
+        const API_URL = "http://localhost:8000/tarefas";
+
+        async function carregarTarefas() {
+            const res = await fetch(API_URL);
+            const tarefas = await res.json();
+            const container = document.getElementById("container-tarefas");
+            container.innerHTML = "";
+            
+            tarefas.forEach(t => {
+                container.innerHTML += `
+                    <div class="item-tarefa">
+                        <span>${t.titulo}</span>
+                        <button class="btn-deletar" onclick="deletarTarefa(${t.id})">Excluir</button>
+                    </div>
+                `;
+            });
+        }
+
+        async function adicionarTarefa() {
+            const input = document.getElementById("input-tarefa");
+            if (!input.value.trim()) return;
+
+            await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ titulo: input.value })
+            });
+            input.value = "";
+            carregarTarefas();
+        }
+
+        async function deletarTarefa(id) {
+            await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            carregarTarefas();
+        }
+
+        carregarTarefas();
     </script>
 </body>
 </html>
