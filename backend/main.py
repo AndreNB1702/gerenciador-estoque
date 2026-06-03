@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
@@ -16,6 +17,9 @@ class TarefaBD(Base):
     titulo = Column(String, nullable=False)
 
 Base.metadata.create_all(bind=engine)
+
+class TarefaSchema(BaseModel):
+    titulo: str
 
 app = FastAPI()
 
