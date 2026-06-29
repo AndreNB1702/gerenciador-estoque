@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Tarefas</title>
+    <title>Controle de Estoque</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
@@ -16,87 +16,116 @@
             border: 1px solid #e0e0e0;
         }
         
-        h1 { font-size: 1.6rem; color: #1a73e8; text-align: center; }
+        h1 { font-size: 1.6rem; color: #1e3a8a; text-align: center; }
         h2 { font-size: 1.2rem; margin-bottom: 15px; }
         
-        .form-grupo { display: flex; gap: 10px; }
-        input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-        button { padding: 12px 20px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .form-grupo { display: flex; flex-direction: column; gap: 10px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        button { padding: 12px 20px; background: #1e3a8a; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
         
-        .item-tarefa { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 12px; 
-            border-bottom: 1px solid #eee; 
-        }
-        .btn-deletar { background: #d93025; color: white; padding: 6px 12px; font-size: 0.9rem; border: none; border-radius: 4px; cursor: pointer; }
+        .tabela-responsiva { width: 100%; overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; }
+        th { background-color: #f8fafc; color: #1e3a8a; }
+        
+        .btn-deletar { background: #d93025; color: white; padding: 6px 12px; font-size: 0.85rem; border: none; border-radius: 4px; cursor: pointer; }
 
         @media (min-width: 768px) {
-            body { max-width: 600px; margin: 40px auto; }
+            body { max-width: 700px; margin: 40px auto; }
+            .form-linha { display: flex; gap: 10px; }
+            button { width: auto; align-self: flex-end; height: 47px; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Minhas Tarefas</h1>
+        <h1>📦 Controle de Estoque</h1>
     </header>
 
     <main>
-        <section aria-label="Adicionar Nova Tarefa">
-            <h2>Nova Tarefa</h2>
+        <section aria-label="Cadastrar Novo Produto">
+            <h2>Novo Produto</h2>
             <div class="form-grupo">
-                <input type="text" id="input-tarefa" placeholder="O que precisa ser feito?">
-                <button onclick="adicionarTarefa()">Adicionar</button>
+                <div class="form-linha">
+                    <input type="text" id="prod-nome" placeholder="Nome do produto">
+                    <input type="number" id="prod-qtd" placeholder="Qtd" min="0">
+                    <input type="number" id="prod-preco" placeholder="Preço (R$)" step="0.01" min="0">
+                </div>
+                <button onclick="adicionarProduto()">Cadastrar</button>
             </div>
         </section>
 
-        <section aria-label="Lista de Tarefas Cadastradas">
-            <h2>Lista de Afazeres</h2>
-            <div id="container-tarefas">
-                </div>
+        <section aria-label="Produtos em Estoque">
+            <h2>Produtos Cadastrados</h2>
+            <div class="tabela-responsiva">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Qtd</th>
+                            <th>Preço</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-produtos">
+                        </tbody>
+                </table>
+            </div>
         </section>
     </main>
 
     <script>
-        const API_URL = "http://localhost:8000/tarefas";
+        const API_URL = "http://localhost:8000/produtos";
 
-        async function carregarTarefas() {
+        async function carregarProdutos() {
             const res = await fetch(API_URL);
-            const tarefas = await res.json();
-            const container = document.getElementById("container-tarefas");
-            container.innerHTML = "";
+            const produtos = await res.json();
+            const tabela = document.getElementById("lista-produtos");
+            tabela.innerHTML = "";
             
-            tarefas.forEach(t => {
-                container.innerHTML += `
-                    <div class="item-tarefa">
-                        <span>${t.titulo}</span>
-                        <button class="btn-deletar" onclick="deletarTarefa(${t.id})">Excluir</button>
-                    </div>
+            produtos.forEach(p => {
+                tabela.innerHTML += `
+                    <tr>
+                        <td><strong>${p.nome}</strong></td>
+                        <td>${p.quantidade}</td>
+                        <td>R$ ${p.preco.toFixed(2)}</td>
+                        <td><button class="btn-deletar" onclick="deletarProduto(${p.id})">Excluir</button></td>
+                    </tr>
                 `;
             });
         }
 
-        async function adicionarTarefa() {
-            const input = document.getElementById("input-tarefa");
-            if (!input.value.trim()) return;
+        async function adicionarProduto() {
+            const nome = document.getElementById("prod-nome").value;
+            const qtd = document.getElementById("prod-qtd").value;
+            const preco = document.getElementById("prod-preco").value;
+
+            if (!nome.trim() || qtd === "" || preco === "") return;
 
             await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ titulo: input.value })
+                body: JSON.stringify({
+                    nome: nome,
+                    quantidade: parseInt(qtd),
+                    preco: parseFloat(preco)
+                })
             });
-            input.value = "";
-            carregarTarefas();
+
+            document.getElementById("prod-nome").value = "";
+            document.getElementById("prod-qtd").value = "";
+            document.getElementById("prod-preco").value = "";
+
+            carregarProdutos();
         }
 
-        async function deletarTarefa(id) {
+        async function deletarProduto(id) {
             await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-            carregarTarefas();
+            carregarProdutos();
         }
 
-        carregarTarefas();
+        carregarProdutos();
     </script>
 </body>
 </html>
