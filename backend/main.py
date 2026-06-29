@@ -44,3 +44,30 @@ def get_db():
 @app.get("/")
 def rota_verificacao():
     return {"status": "rodando", "banco_configurado": True, "sistema": "estoque"}
+
+@app.get("/produtos")
+def listar_produtos(db: Session = Depends(get_db)):
+    return db.query(ProdutoBD).all()
+
+@app.post("/produtos")
+def criar_produto(produto: ProdutoSchema, db: Session = Depends(get_db)):
+    novo_produto = ProdutoBD(
+        nome=produto.nome,
+        quantidade=produto.quantidade,
+        preco=produto.preco
+    )
+    db.add(novo_produto)
+    db.commit()
+    db.refresh(novo_produto)
+    return novo_produto
+
+@app.delete("/produtos/{produto_id}")
+def deletar_produto(produto_id: int, db: Session = Depends(get_db)):
+    produto = db.query(ProdutoBD).filter(ProdutoBD.id == produto_id).first()
+    
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+        
+    db.delete(produto)
+    db.commit()
+    return {"status": "sucesso", "mensagem": "Produto removido do estoque"}
