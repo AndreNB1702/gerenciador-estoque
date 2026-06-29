@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String
+from pydantic import BaseModel, Field
+from sqlalchemy import create_engine, Column, Integer, String, Float
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 import os
 
@@ -11,15 +11,19 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-class TarefaBD(Base):
-    __tablename__ = "tarefas"
+class ProdutoBD(Base):
+    __tablename__ = "produtos"
     id = Column(Integer, primary_key=True, index=True)
-    titulo = Column(String, nullable=False)
+    nome = Column(String, nullable=False)
+    quantidade = Column(Integer, nullable=False, default=0)
+    preco = Column(Float, nullable=False, default=0.0)
 
 Base.metadata.create_all(bind=engine)
 
-class TarefaSchema(BaseModel):
-    titulo: str
+class ProdutoSchema(BaseModel):
+    nome: str
+    quantidade: int = Field(..., ge=0, description="A quantidade não pode ser negativa")
+    preco: float = Field(..., ge=0.0, description="O preço não pode ser negativo")
 
 app = FastAPI()
 
@@ -39,27 +43,4 @@ def get_db():
 
 @app.get("/")
 def rota_verificacao():
-    return {"status": "rodando", "banco_configurado": True}
-
-@app.get("/tarefas")
-def listar_tarefas(db: Session = Depends(get_db)):
-    return db.query(TarefaBD).all()
-
-@app.post("/tarefas")
-def criar_tarefa(tarefa: TarefaSchema, db: Session = Depends(get_db)):
-    nova_tarefa = TarefaBD(titulo=tarefa.titulo)
-    db.add(nova_tarefa)
-    db.commit()
-    db.refresh(nova_tarefa)
-    return nova_tarefa
-
-@app.delete("/tarefas/{tarefa_id}")
-def deletar_tarefa(tarefa_id: int, db: Session = Depends(get_db)):
-    tarefa = db.query(TarefaBD).filter(TarefaBD.id == tarefa_id).first()
-    
-    if not tarefa:
-        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
-        
-    db.delete(tarefa)
-    db.commit()
-    return {"status": "sucesso", "mensagem": "Tarefa removida"}
+    return {"status": "rodando", "banco_configurado": True, "sistema": "estoque"}
