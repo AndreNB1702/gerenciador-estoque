@@ -71,3 +71,18 @@ def deletar_produto(produto_id: int, db: Session = Depends(get_db)):
     db.delete(produto)
     db.commit()
     return {"status": "sucesso", "mensagem": "Produto removido do estoque"}
+
+@app.put("/produtos/{produto_id}/comprar")
+def comprar_produto(produto_id: int, quantidade_comprada: int, db: Session = Depends(get_db)):
+    produto = db.query(ProdutoBD).filter(ProdutoBD.id == produto_id).first()
+    
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+        
+    if produto.quantidade < quantidade_comprada:
+        raise HTTPException(status_code=400, detail="Quantidade insuficiente em estoque")
+        
+    produto.quantidade -= quantidade_comprada
+    db.commit()
+    db.refresh(produto)
+    return {"status": "sucesso", "mensagem": "Compra realizada", "estoque_atual": produto.quantidade}
