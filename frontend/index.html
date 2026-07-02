@@ -103,11 +103,24 @@
         }
 
         async function comprar(id) {
-            const qtd = prompt("Quantidade?");
-            if(!qtd) return;
-            await fetch(`${API}/produtos/${id}/comprar?quantidade_comprada=${qtd}`, { method: "PUT" });
-            carregar();
-        }
+    const qtdInput = prompt("Quantidade?");
+    const qtd = parseInt(qtdInput);
+
+    // Valida se foi digitado um número e se ele é positivo
+    if (isNaN(qtd) || qtd <= 0) {
+        alert("Por favor, digite um número válido maior que zero.");
+        return;
+    }
+
+    const res = await fetch(`${API}/produtos/${id}/comprar?quantidade_comprada=${qtd}`, { method: "PUT" });
+    
+    if (res.ok) {
+        carregar();
+    } else {
+        const erro = await res.json();
+        alert("Erro: " + erro.detail);
+    }
+}
 
         async function deletar(id) {
             await fetch(`${API}/produtos/${id}`, { method: "DELETE" });

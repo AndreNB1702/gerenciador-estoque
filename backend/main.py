@@ -121,11 +121,17 @@ def deletar_produto(produto_id: int, db: Session = Depends(get_db)):
 
 @app.put("/produtos/{produto_id}/comprar")
 def comprar_produto(produto_id: int, quantidade_comprada: int, db: Session = Depends(get_db)):
+    # Adicione esta validação:
+    if quantidade_comprada <= 0:
+        raise HTTPException(status_code=400, detail="A quantidade deve ser maior que zero")
+    
     produto = db.query(ProdutoBD).filter(ProdutoBD.id == produto_id).first()
     if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
     if produto.quantidade < quantidade_comprada:
         raise HTTPException(status_code=400, detail="Quantidade insuficiente")
+        
     produto.quantidade -= quantidade_comprada
     db.commit()
+    db.refresh(produto) # Opcional: atualiza o objeto com os dados do banco
     return {"status": "sucesso", "estoque_atual": produto.quantidade}
